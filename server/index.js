@@ -1,26 +1,58 @@
 import express from "express";
 import cors from "cors";
 
-// yes ive connected it..if i now want to continue pushing from now, how do i do it, when i have coded some changes and i want to push to github
-
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
+// the simple test route
 app.get("/", (req, res) => {
-  res.send("Devclarity Server is Running!");
+  res.send("Devclarity Backend Server is Running! yahhhhh");
 });
 
-app.post("/analyze", (req, res) => {
-  const { code } = req.body;
-
+// the api route (very important!)
+app.get("/api/message", (req, res) => {
   res.json({
-    message: "Code received",
-    code: code
+    message: "Hello from DevClarity Backend!",
+    status: "success"
   });
 });
 
-app.listen(5000, () => {
-  console.log("Server running on port 5000");
+
+
+app.post("/api/analyze", (req, res) => {
+  const { code } = req.body;
+
+  if (!code) {
+    return res.json({
+      status: "error",
+      message: "No code provided"
+    });
+  }
+
+  // the Simple fake analysis (MVP logic)
+  let feedback = "";
+
+  if (code.includes("console.log")) {
+    feedback = "Avoid console.log in production code";
+  } else if (code.length < 20) {
+    feedback = "Code looks too short. Add more logic";
+  } else {
+    feedback = "your Code looks good";
+  }
+
+  res.json({
+    status: "success",
+    feedback: feedback
+  });
+});
+
+
+
+const PORT = 5000;
+
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
