@@ -1,15 +1,25 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+
+  type AnalysisResult = {
+  score: number;
+  summary: string;
+  issues: string[];
+  suggestions: string[];
+};
 
 function App() {
+
   const [code, setCode] = useState("");
-  const [result, setResult] = useState("");
+  const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const resultRef = useRef<HTMLDivElement | null>(null);
 
   const analyzeCode = async () => {
     setLoading(true);
     setError("");
-    setResult("");
+    setResult(null);
 
     try {
       const response = await fetch("http://localhost:5000/api/analyze", {
@@ -25,8 +35,15 @@ function App() {
       if (data.status === "error") {
         setError(data.message);
       } else {
-        setResult(data.feedback);
+        setResult(data);
       }
+
+      setTimeout(() => {
+        resultRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+      }, 100);
 
     } catch {
       setError("Something went wrong. Check your backend.");
@@ -36,16 +53,19 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center py-10 px-4">
-      <h1>DevClarity</h1>
+    <div className="min-h-screen flex flex-col items-center py-12 px-4 text-white bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950">
+      <h1 className="text-5xl font-extrabold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 drop-shadow-[0_0_15px_rgba(168,85,247,0.6)] ">
+            DevClarity
+      </h1>
 
     <textarea
       rows={10}
       value={code}
       onChange={(e) => setCode(e.target.value)}
       placeholder="Paste your code here..."
-      className="w-full max-w-2xl p-4 rounded-lg bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-  />
+      className="w-full max-w-2xl p-4 rounded-xl 
+     bg-slate-900/70 backdrop-blur-md border border-purple-500/30 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 shadow-[0_0_20px_rgba(0,255,255,0.05)] transition"
+    />
 
       <br /><br />
 
@@ -63,12 +83,52 @@ function App() {
 
       {error && <p className="error">{error}</p>}
 
-      {result && (
-        <div className="result-box">
-          <h3>Feedback:</h3>
-          <p>{result}</p>
+     {result && (
+      <div 
+        ref={resultRef}
+        className="result-box mt-8 w-full max-w-2xl p-6 rounded-xl 
+        bg-slate-900/60 backdrop-blur-md 
+        border border-cyan-500/30 
+        shadow-[0_0_25px_rgba(34,211,238,0.1)]"
+      >
+
+        {/* the score */}
+        <div className="mb-4">
+            <h2 className="text-lg font-semibold text-cyan-400">
+              AI Score: {result.score}/10
+            </h2>
+
+            <p className="text-slate-300 italic">
+              <b>Summary:</b> {result.summary}
+            </p>
         </div>
-      )}
+
+        {/* the issues */}
+        {result.issues?.length > 0 && (
+          <div className="mb-4">
+            <h4 className="text-red-400 font-semibold mb-2">Issues</h4>
+            <ul className="list-disc pl-5 text-slate-300">
+              {result.issues.map((item: string, i: number) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* the suggestions */}
+        <div>
+          <h4 className="text-green-400 font-semibold mb-2">
+            Suggestions
+          </h4>
+          <ul className="list-disc pl-5 text-slate-300">
+            {result.suggestions.map((item: string, i: number) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      
+  </div>
+)}
     </div>
   );
 }
