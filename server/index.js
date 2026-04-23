@@ -1,57 +1,29 @@
 import express from "express";
 import cors from "cors";
+import analyzeRoute from "./routes/analyzeRoute.js";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// the simple test route
+// the test route
 app.get("/", (req, res) => {
-  res.send("Devclarity Backend Server is Running! yahhhhh");
+  res.send("DevClarity Backend is running..thank ");
 });
 
-// the api route (very important!)
+// the message route
 app.get("/api/message", (req, res) => {
   res.json({
-    message: "Hello from DevClarity Backend!",
+    message: "Hello from DevClarity Backend! welcome",
     status: "success"
   });
 });
 
-
-
-app.post("/api/analyze", (req, res) => {
-  const { code } = req.body;
-
-  if (!code) {
-    return res.json({
-      status: "error",
-      message: "No code provided"
-    });
-  }
-
-  // the Simple fake analysis (MVP logic)
-  let feedback = "";
-
-  if (code.includes("console.log")) {
-    feedback = "Avoid console.log in production code";
-  } else if (code.length < 20) {
-    feedback = "Code looks too short. Add more logic";
-  } else {
-    feedback = "your Code looks good";
-  }
-
-  res.json({
-    status: "success",
-    feedback: feedback
-  });
-});
-
-
+// the IMPORTANT PART
+app.use("/api", analyzeRoute);
 
 const PORT = 5000;
-
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
