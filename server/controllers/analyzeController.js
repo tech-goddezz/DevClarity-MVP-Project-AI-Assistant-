@@ -1,54 +1,73 @@
-export const analyzeCode = (req, res) => {
+import OpenAI from "openai";
+
+export const analyzeCode = async (req, res) => {
+  try {
+    const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
   
     const { code } = req.body;
 
-  if (!code) {
-    return res.json({
+    if (!code) {
+      return res.status(400).json({
+        status: "error",
+        message: "No code provided",
+      });
+    }
+
+    const prompt = `
+You are a senior software engineer.
+
+Analyze the following code and return:
+
+1. Score (0-10)
+2. Short summary
+3. Issues (array)
+4. Suggestions (array)
+
+Respond ONLY in JSON format like this:
+
+{
+  "score": number,
+  "summary": "...",
+  "issues": ["..."],
+  "suggestions": ["..."]
+}
+
+Code:
+${code}
+`;
+
+    const response = await client.responses.create({
+      model: "gpt-4.1-mini",
+      input: prompt,
+    });
+
+    const aiText = response.output_text;
+
+    let parsed;
+
+    try {
+      parsed = JSON.parse(aiText);
+    } catch {
+      return res.status(500).json({
+        status: "error",
+        message: "AI returned invalid JSON",
+      });
+    }
+
+    res.json({
+      status: "success",
+      ...parsed,
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
       status: "error",
-      message: "No code provided"
+      message: "AI analysis failed",
     });
   }
-
-
-  let issues = [];
-  let suggestions = [];
-  let score = 10;
-
-
-//   the basic analysis rules
-  
- if (code.includes("console.log")) {
-    issues.push("Avoid console.log in production code");
-    suggestions.push("Use proper logging tools or remove debug logs");
-    score -= 2;
-  } 
-  
-  if (code.length < 20) {
-    issues.push("Code is too short or incomplete");
-    suggestions.push("Write more meaningful logic before analyzing");
-    score -= 3;
-  } 
-  
-  if (!code.includes("return")) {
-    issues.push("Missing return statement (if function-based logic)");
-    suggestions.push("Ensure functions return values where needed");
-    score -= 1;
-  } 
-  
-  if (issues.length === 0) {
-    suggestions.push("Great job! Code looks clean and structured");
-  }
-
-   return res.json({
-    status: "success",
-    score,
-    issues,
-    suggestions,
-    summary:
-      score >= 8
-        ? "Excellent code quality!"
-        : score >= 5
-        ? "Good, but needs improvement!"
-        : "Needs significant improvements!"
-  });
 };

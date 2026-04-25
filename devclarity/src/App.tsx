@@ -14,12 +14,46 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+   const [typedSummary, setTypedSummary] = useState("");
+
+   const [displayScore, setDisplayScore] = useState(0);
+
   const resultRef = useRef<HTMLDivElement | null>(null);
+
+  // Typing effect function
+  const typeText = (text: string) => {
+    let index = 0;
+    setTypedSummary("");
+
+    const interval = setInterval(() => {
+      setTypedSummary((prev) => prev + text[index]);
+      index++;
+
+      if (index === text.length) {
+        clearInterval(interval);
+      }
+    }, 25);
+  };
+
+  const animateScore = (finalScore: number) => {
+    let current = 0;
+
+    const interval = setInterval(() => {
+      current++;
+      setDisplayScore(current);
+
+      if (current === finalScore) {
+        clearInterval(interval);
+      }
+    }, 100);
+  };
 
   const analyzeCode = async () => {
     setLoading(true);
     setError("");
     setResult(null);
+    setTypedSummary("");
+    setDisplayScore(0);
 
     try {
       const response = await fetch("http://localhost:5000/api/analyze", {
@@ -31,19 +65,26 @@ function App() {
       });
 
       const data = await response.json();
+      await new Promise((resolve) => setTimeout(resolve, 800));
 
       if (data.status === "error") {
         setError(data.message);
       } else {
         setResult(data);
-      }
 
-      setTimeout(() => {
+        animateScore(data.score);
+
+        // typing effect
+        typeText(data.summary);
+
+        setTimeout(() => {
         resultRef.current?.scrollIntoView({
         behavior: "smooth",
         block: "start"
       });
       }, 100);
+      }
+
 
     } catch {
       setError("Something went wrong. Check your backend.");
@@ -78,6 +119,12 @@ function App() {
         {loading ? "Analyzing code..." : "Analyze Code"}
       </button>
 
+      {loading && (
+  <p className="mt-4 text-cyan-400 animate-pulse">
+    AI is analyzing your code...
+  </p>
+)}
+
       <br /><br />
 
 
@@ -95,11 +142,11 @@ function App() {
         {/* the score */}
         <div className="mb-4">
             <h2 className="text-lg font-semibold text-cyan-400">
-              AI Score: {result.score}/10
+              AI Score: {displayScore}/10
             </h2>
 
             <p className="text-slate-300 italic">
-              <b>Summary:</b> {result.summary}
+              <b>Summary:</b> {typedSummary}
             </p>
         </div>
 
