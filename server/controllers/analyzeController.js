@@ -163,14 +163,35 @@ function buildAnalysis(raw) {
 
 export const analyzeCode = async (req, res) => {
   try {
-    const { code } = req.body;
+    const { code, language } = req.body;
 
-    if (!code) {
+    if (typeof code !== "string") {
       return res.status(400).json({
         status: "error",
-        message: "No code provided",
+        message: "Code must be text.",
       });
     }
+    
+    const trimmedCode = code.trim();
+    
+    if (!trimmedCode) {
+      return res.status(400).json({
+        status: "error",
+        message: "Code input is empty. Paste some code first.",
+      });
+    }
+    
+    if (trimmedCode.length > 12000) {
+      return res.status(400).json({
+        status: "error",
+        message: "Code is too long. Please paste a smaller snippet (max 12,000 characters).",
+      });
+    }
+
+      const allowedLanguages = ["javascript", "typescript", "python"];
+      const selectedLanguage = allowedLanguages.includes(language)
+    ? language
+    : "javascript";
 
     const prompt = `
 You are reviewing one code snippet for a beginner developer.
@@ -207,8 +228,11 @@ IF YOU CANNOT COMPLY, RETURN:
   "suggestions": ["Try again with a shorter code sample."]
 }
 
+LANGUAGE:
+${selectedLanguage}
+
 CODE:
-${code}
+${trimmedCode}
 `;
 
     const completion = await groq.chat.completions.create({

@@ -1,5 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 
+import Editor from "react-simple-code-editor";
+import Prism from "prismjs";
+import "prismjs/components/prism-typescript";
+import "prismjs/components/prism-python";
+import "prismjs/components/prism-javascript";
+import "prismjs/themes/prism-tomorrow.css";
+
   type AnalysisResult = {
   score: number;
   summary: string;
@@ -14,6 +21,8 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [language, setLanguage] = useState("javascript");
+
    const [typedSummary, setTypedSummary] = useState("");
 
    const [displayScore, setDisplayScore] = useState(0);
@@ -22,6 +31,11 @@ function App() {
   const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scoreIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const highlightCode = (input: string) => {
+    const grammar = Prism.languages[language] || Prism.languages.javascript;
+    return Prism.highlight(input, grammar, language);
+  };
+ 
   const clearTypingAnimation = () => {
     if (typingIntervalRef.current !== null) {
       clearInterval(typingIntervalRef.current);
@@ -93,7 +107,7 @@ function App() {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ code })
+        body: JSON.stringify({ code, language })
       });
 
       const data = await response.json();
@@ -131,14 +145,40 @@ function App() {
             DevClarity
       </h1>
 
-    <textarea
-      rows={10}
-      value={code}
-      onChange={(e) => setCode(e.target.value)}
-      placeholder="Paste your code here..."
-      className="w-full max-w-2xl p-4 rounded-xl 
-     bg-slate-900/70 backdrop-blur-md border border-purple-500/30 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 shadow-[0_0_20px_rgba(0,255,255,0.05)] transition"
-    />
+      <div className="w-full max-w-2xl mb-3 flex items-center gap-2">
+          <label htmlFor="language-select" className="text-sm text-slate-300">
+            Language:
+          </label>
+          <select
+            id="language-select"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="bg-slate-900 border border-slate-700 text-slate-200 rounded-md px-3 py-1 text-sm"
+          >
+            <option value="javascript">JavaScript</option>
+            <option value="typescript">TypeScript</option>
+            <option value="python">Python</option>
+          </select>
+        </div>
+
+      <div className="w-full max-w-2xl rounded-xl border border-purple-500/30 bg-slate-900/70 backdrop-blur-md shadow-[0_0_20px_rgba(0,255,255,0.05)] overflow-hidden">
+    
+
+      <Editor
+        value={code}
+        onValueChange={(nextCode) => setCode(nextCode)}
+        highlight={highlightCode}
+        padding={16}
+        textareaId="code-editor"
+        placeholder="Paste your code here..."
+        className="text-sm min-h-[220px] font-mono focus:outline-none"
+        style={{
+          fontFamily: '"Fira Code", "Consolas", monospace',
+          color: "#e2e8f0",
+          background: "transparent",
+        }}
+      />
+    </div>
 
     {!code && (
   <p className="text-slate-400 mt-2 text-sm">
@@ -187,6 +227,12 @@ function App() {
             <p className="text-slate-300 italic">
               <b>Summary:</b> {typedSummary}
             </p>
+
+            {result.score <= 3 && (
+              <p className="text-amber-300 text-sm mt-2">
+                This result may be low confidence. Try again with a shorter code snippet.
+              </p>
+            )}
         </div>
 
         {/* the issues */}
