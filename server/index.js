@@ -1,12 +1,12 @@
 import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+dotenv.config();
 
 import express from "express";
 import cors from "cors";
 import analyzeRoute from "./routes/analyzeRoute.js";
 
 const app = express();
-
+ 
 app.use(cors());
 app.use(express.json());
 

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
   type AnalysisResult = {
   score: number;
@@ -19,42 +19,74 @@ function App() {
    const [displayScore, setDisplayScore] = useState(0);
 
   const resultRef = useRef<HTMLDivElement | null>(null);
+  const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const scoreIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Typing effect function
-  const typeText = (text: string) => {
+  const clearTypingAnimation = () => {
+    if (typingIntervalRef.current !== null) {
+      clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+    }
+  };
+
+  const clearScoreAnimation = () => {
+    if (scoreIntervalRef.current !== null) {
+      clearInterval(scoreIntervalRef.current);
+      scoreIntervalRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      clearTypingAnimation();
+      clearScoreAnimation();
+    };
+  }, []);
+
+  // Typing effect: one interval at a time, Unicode-safe character steps
+  const typeText = (text: unknown) => {
+    clearTypingAnimation();
+    const safe = typeof text === "string" ? text : String(text ?? "");
+    const chars = [...safe];
     let index = 0;
     setTypedSummary("");
 
-    const interval = setInterval(() => {
-      setTypedSummary((prev) => prev + text[index]);
-      index++;
-
-      if (index === text.length) {
-        clearInterval(interval);
+    typingIntervalRef.current = setInterval(() => {
+      if (index >= chars.length) {
+        clearTypingAnimation();
+        return;
       }
+      const chunk = chars[index];
+      index += 1;
+      setTypedSummary((prev) => prev + chunk);
     }, 25);
   };
 
   const animateScore = (finalScore: number) => {
+    clearScoreAnimation();
     let current = 0;
+    const target = Math.min(finalScore || 0, 10);
 
-    const interval = setInterval(() => {
-      current++;
-      setDisplayScore(current);
+    scoreIntervalRef.current = setInterval(() => {
+      current += 0.2;
+      setDisplayScore(Math.round(current));
 
-      if (current === finalScore) {
-        clearInterval(interval);
+      if (current >= target) {
+        setDisplayScore(target);
+        clearScoreAnimation();
       }
-    }, 100);
+    }, 30);
   };
 
   const analyzeCode = async () => {
+    clearTypingAnimation();
+    clearScoreAnimation();
     setLoading(true);
     setError("");
     setResult(null);
     setTypedSummary("");
     setDisplayScore(0);
-
+ 
     try {
       const response = await fetch("http://localhost:5000/api/analyze", {
         method: "POST",
@@ -108,6 +140,12 @@ function App() {
      bg-slate-900/70 backdrop-blur-md border border-purple-500/30 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 shadow-[0_0_20px_rgba(0,255,255,0.05)] transition"
     />
 
+    {!code && (
+  <p className="text-slate-400 mt-2 text-sm">
+    Paste code above to get AI feedback
+  </p>
+)}
+
       <br /><br />
 
       <button 
@@ -120,9 +158,10 @@ function App() {
       </button>
 
       {loading && (
-  <p className="mt-4 text-cyan-400 animate-pulse">
-    AI is analyzing your code...
-  </p>
+  <div className="mt-4 text-cyan-400 animate-pulse flex items-center gap-2">
+    <span className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></span>
+    <span>Analyzing your code with AI...</span>
+  </div>
 )}
 
       <br /><br />
