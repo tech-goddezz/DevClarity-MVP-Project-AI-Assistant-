@@ -7,11 +7,15 @@ import "prismjs/components/prism-python";
 import "prismjs/components/prism-javascript";
 import "prismjs/themes/prism-tomorrow.css";
 
+
   type AnalysisResult = {
-  score: number;
-  summary: string;
-  issues: string[];
-  suggestions: string[];
+    code: string;
+    id: string;
+    score: number;
+    language?: string;
+    summary: string;
+    issues: string[];
+    suggestions: string[];
 };
 
 function App() {
@@ -27,6 +31,8 @@ function App() {
 
    const [displayScore, setDisplayScore] = useState(0);
 
+   const [history, setHistory] = useState<AnalysisResult[]>([]);
+
   const resultRef = useRef<HTMLDivElement | null>(null);
   const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scoreIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -35,6 +41,46 @@ function App() {
     const grammar = Prism.languages[language] || Prism.languages.javascript;
     return Prism.highlight(input, grammar, language);
   };
+
+  const guessLanguage = (input: string) => {
+    const text = input.trim();
+  
+    if (
+      text.includes("def ") ||
+      text.includes("import ") ||
+      text.includes("print(")
+    ) {
+      return "python";
+    }
+  
+    if (text.includes(": string") || text.includes("interface ") || text.includes("type ")) {
+      return "typescript";
+    }
+  
+    return "javascript";
+  };
+
+  const toLanguageLabel = (value?: string) =>
+    value === "javascript"
+      ? "JavaScript"
+      : value === "typescript"
+      ? "TypeScript"
+      : value === "python"
+      ? "Python"
+      : "JavaScript";
+
+  const languageOptions = [
+    { value: "javascript", label: "JavaScript" },
+    { value: "typescript", label: "TypeScript" },
+    { value: "python", label: "Python" },
+  ];
+
+  const languageLabel =
+    language === "javascript"
+      ? "JavaScript"
+      : language === "typescript"
+      ? "TypeScript"
+      : "Python";
  
   const clearTypingAnimation = () => {
     if (typingIntervalRef.current !== null) {
@@ -116,7 +162,15 @@ function App() {
       if (data.status === "error") {
         setError(data.message);
       } else {
-        setResult(data);
+        
+        const resultWithId: AnalysisResult = {
+          ...data,
+          id: crypto.randomUUID(),
+          code,
+        };
+          
+          setResult(resultWithId);
+          setHistory((prev) => [resultWithId, ...prev].slice(0, 10));
 
         animateScore(data.score);
 
@@ -152,12 +206,20 @@ function App() {
           <select
             id="language-select"
             value={language}
-            onChange={(e) => setLanguage(e.target.value)}
+            onChange={(e) => {
+              setLanguage(e.target.value);
+              setResult(null);
+              setTypedSummary("");
+              setDisplayScore(0);
+              setError("");
+            }}
             className="bg-slate-900 border border-slate-700 text-slate-200 rounded-md px-3 py-1 text-sm"
           >
-            <option value="javascript">JavaScript</option>
-            <option value="typescript">TypeScript</option>
-            <option value="python">Python</option>
+            {languageOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -166,7 +228,13 @@ function App() {
 
       <Editor
         value={code}
-        onValueChange={(nextCode) => setCode(nextCode)}
+        onValueChange={(nextCode) => {
+          setCode(nextCode);
+        
+          if (!result) {
+            setLanguage(guessLanguage(nextCode));
+          }
+        }}
         highlight={highlightCode}
         padding={16}
         textareaId="code-editor"
@@ -197,6 +265,10 @@ function App() {
         {loading ? "Analyzing code..." : "Analyze Code"}
       </button>
 
+      <p className="mt-2 text-xs text-slate-400">
+        Current language mode: {languageLabel}
+      </p>
+
       {loading && (
   <div className="mt-4 text-cyan-400 animate-pulse flex items-center gap-2">
     <span className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></span>
@@ -223,6 +295,10 @@ function App() {
             <h2 className="text-lg font-semibold text-cyan-400">
               AI Score: {displayScore}/10
             </h2>
+
+            <p className="text-xs text-slate-400 mt-1">
+            Analyzed as: {toLanguageLabel(result.language || language)}
+            </p>
 
             <p className="text-slate-300 italic">
               <b>Summary:</b> {typedSummary}
@@ -259,6 +335,35 @@ function App() {
           </ul>
         </div>
       
+  </div>
+)}
+
+{history.length > 0 && (
+  <div className="mt-8 w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-900/60 p-4">
+    <h3 className="text-sm font-semibold text-slate-200 mb-3">Recent Analyses</h3>
+
+    <ul className="space-y-2">
+      {history.map((item) => (
+        <li key={item.id}>
+          <button
+            type="button"
+            onClick={() => {
+              setResult(item);
+              setCode(item.code);
+              setLanguage(item.language || "javascript");
+              typeText(item.summary);
+              animateScore(item.score);
+            }}
+            className="w-full text-left rounded-md border border-slate-700 bg-slate-800/60 px-3 py-2 hover:bg-slate-700/60 transition"
+          >
+            <p className="text-xs text-slate-300">
+              Score: {item.score}/10 • {toLanguageLabel(item.language)}
+            </p>
+            <p className="text-xs text-slate-400 truncate">{item.summary}</p>
+          </button>
+        </li>
+      ))}
+    </ul>
   </div>
 )}
     </div>

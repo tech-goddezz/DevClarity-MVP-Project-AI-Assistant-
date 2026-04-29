@@ -165,6 +165,13 @@ export const analyzeCode = async (req, res) => {
   try {
     const { code, language } = req.body;
 
+    if (language !== undefined && typeof language !== "string") {
+      return res.status(400).json({
+        status: "error",
+        message: "Language must be text.",
+      });
+    }
+
     if (typeof code !== "string") {
       return res.status(400).json({
         status: "error",
@@ -189,9 +196,13 @@ export const analyzeCode = async (req, res) => {
     }
 
       const allowedLanguages = ["javascript", "typescript", "python"];
-      const selectedLanguage = allowedLanguages.includes(language)
-    ? language
-    : "javascript";
+
+      const normalizedLanguage =
+        typeof language === "string" ? language.toLowerCase() : "javascript";
+
+      const selectedLanguage = allowedLanguages.includes(normalizedLanguage)
+        ? normalizedLanguage
+        : "javascript";
 
     const prompt = `
 You are reviewing one code snippet for a beginner developer.
@@ -265,8 +276,10 @@ ${trimmedCode}
         summary:
           "The AI returned an empty reply. Try again in a moment or shorten your code.",
       };
+
       return res.json({
         status: "success",
+        language: selectedLanguage,
         ...analysis,
       });
     }
@@ -284,8 +297,10 @@ ${trimmedCode}
 
     res.json({
       status: "success",
+      language: selectedLanguage,
       ...analysis,
     });
+
   } catch (error) {
     console.error(error);
 
