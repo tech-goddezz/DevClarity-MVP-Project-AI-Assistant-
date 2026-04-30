@@ -20,7 +20,7 @@ app.get("/api/message", (req, res) => {
   res.json({
     message: "Hello from DevClarity Backend! welcome",
     status: "success"
-  });
+  }); 
 });
 
 // the IMPORTANT PART

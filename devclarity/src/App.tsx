@@ -33,6 +33,8 @@ function App() {
 
    const [history, setHistory] = useState<AnalysisResult[]>([]);
 
+   const [mode, setMode] = useState("fast");
+
   const resultRef = useRef<HTMLDivElement | null>(null);
   const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scoreIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -102,6 +104,21 @@ function App() {
       clearScoreAnimation();
     };
   }, []);
+
+  useEffect(() => {
+    const savedHistory = localStorage.getItem("devclarity_history");
+  
+    if (savedHistory) {
+      setHistory(JSON.parse(savedHistory));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(
+      "devclarity_history",
+      JSON.stringify(history)
+    );
+  }, [history]);
 
   // Typing effect: one interval at a time, Unicode-safe character steps
   const typeText = (text: unknown) => {
@@ -221,10 +238,24 @@ function App() {
               </option>
             ))}
           </select>
+
+          <select
+            value={mode}
+            onChange={(e) => setMode(e.target.value)}
+            className="bg-slate-900 border border-slate-700 text-slate-200 rounded-md px-3 py-1 text-sm"
+          >
+            <option value="fast">Fast</option>
+            <option value="smart">Smart</option>
+          </select>
+
         </div>
+
+        
 
       <div className="w-full max-w-2xl rounded-xl border border-purple-500/30 bg-slate-900/70 backdrop-blur-md shadow-[0_0_20px_rgba(0,255,255,0.05)] overflow-hidden">
     
+
+      
 
       <Editor
         value={code}
@@ -366,6 +397,18 @@ function App() {
     </ul>
   </div>
 )}
+
+
+<button
+  onClick={() => {
+    setHistory([]);
+    localStorage.removeItem("devclarity_history");
+  }}
+  className="text-xs text-red-400 mt-2"
+>
+  Clear History
+</button>
+
     </div>
   );
 }

@@ -147,7 +147,7 @@ function buildAnalysis(raw) {
     // Keep score realistic based on issue count
     if (issues.length >= 4 && score > 7) {
       score = 7;
-    }
+    } 
 
     if (issues.length === 0 && score < 7) {
       score = 7;
@@ -162,8 +162,10 @@ function buildAnalysis(raw) {
 }
 
 export const analyzeCode = async (req, res) => {
+  
   try {
-    const { code, language } = req.body;
+    
+    const { code, language, mode } = req.body;
 
     if (language !== undefined && typeof language !== "string") {
       return res.status(400).json({
@@ -246,8 +248,14 @@ CODE:
 ${trimmedCode}
 `;
 
+    const model =
+    mode === "smart"
+      ? "llama-3.3-70b-versatile"
+      : "llama-3.1-8b-instant";
+
+
     const completion = await groq.chat.completions.create({
-      model: "llama-3.1-8b-instant",
+      model: model,
       temperature: 0.2,
       messages: [
         {
