@@ -165,7 +165,7 @@ function App() {
     setDisplayScore(0);
  
     try {
-      const response = await fetch("http://localhost:5000/api/analyze", {
+      const response = await fetch("https://devclarity-mvp-project-ai-assistant.onrender.com/api/analyze", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
