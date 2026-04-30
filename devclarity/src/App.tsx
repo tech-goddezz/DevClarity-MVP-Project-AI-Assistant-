@@ -170,7 +170,7 @@ function App() {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ code, language })
+        body: JSON.stringify({ code, language, mode })
       });
 
       const data = await response.json();
