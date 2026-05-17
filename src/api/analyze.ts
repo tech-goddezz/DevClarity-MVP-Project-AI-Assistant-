@@ -44,3 +44,37 @@ export async function analyzeCode(
 
   return data;
 }
+
+
+
+type FixResponse = {
+  fixedCode: string;
+};
+
+// Sends the original code + its issues to the backend
+// and gets back a corrected version of the code.
+// Simple English: asks the AI to actually fix the
+// problems it found, not just list them.
+export async function fixCode(payload: {
+  code: string;
+  issues: string[];
+  language: Language;
+}): Promise<FixResponse> {
+  const response = await fetch(`${API_BASE}/api/fix`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Server error: ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  if (data.status === "error") {
+    throw new Error(data.message || "Fix failed");
+  }
+
+  return data;
+}

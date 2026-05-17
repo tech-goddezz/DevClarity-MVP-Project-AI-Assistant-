@@ -161,3 +161,27 @@ body {
 #code-editor textarea:focus {
   outline: none;
 }
+
+/* Skeleton shimmer animation — gives loading states a
+   professional "content is coming" feel instead of
+   just showing a blank space */
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.03) 25%,
+    rgba(255,255,255,0.07) 50%,
+    rgba(255,255,255,0.03) 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 8px;
+}
+
+.score-ring-fill {
+  transition: stroke-dashoffset 0.1s ease;
+}

@@ -66,3 +66,5 @@ src/
 ---
 
 Built by Elizabeth Omigie · [@elizabth](https://twitter.com/elizabth)
+
+Linkedin: https://www.linkedin.com/in/elizabethomigie
